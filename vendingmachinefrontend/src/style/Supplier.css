@@ -1,0 +1,38 @@
+.main {
+    margin: auto;
+    max-width: 600px;
+    padding-top: 40px;
+}
+
+.paper {
+    margin: auto;
+    padding: 10px 20px;
+  }
+.card {
+    margin: auto;
+    width: 30%;
+    padding: 20px 40px;
+}
+
+.btn-group {
+    display: flex;
+    justify-content: space-evenly;
+    padding: 10px 0px;
+}
+.btn {
+    max-height:55px;
+}
+
+.input-group {
+    display: flex;
+    padding: 5% 16%;
+    justify-content:space-around;
+}
+
+.white-space {
+    height: 40px;
+}
+
+.txtField {
+    width: 30%;
+}
