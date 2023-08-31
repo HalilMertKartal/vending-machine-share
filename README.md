@@ -10,7 +10,8 @@ gradle bootRun
 
 Run React application:
 
-1- Go to vendingmachinefrontend folder, run those commands
+1- Go to vendingmachinefrontend folder, run those commands:
+
 npm i
 
 npm start
