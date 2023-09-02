@@ -1,6 +1,10 @@
 # vending-machine-share build instructions
 I checked Heroku and Netlify but I couldn't find a free service.
 
+#IMPORTANT
+THERE IS AN ADMIN INTERFACE IN THE APPLICATION, WHICH IS FOR ACCESSING THE VENDING MACHINE SETTINGS. THIS FEATURE IS HIDDEN FROM USERS. YOU CAN GO TO: http://localhost:3000/supplier TO ACCESS THE SUPPLIER PANEL.
+
+
 Run spring application:
 
 1-Go to vendingmachine
