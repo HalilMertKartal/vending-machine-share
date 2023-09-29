@@ -1,6 +1,5 @@
 package com.casestudy.vendingmachine.model;
 
-import com.casestudy.vendingmachine.utilities.Constants;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
@@ -16,7 +15,6 @@ public class Product {
     public Product() {
 
     }
-
 
     public int getId() {
         return id;
@@ -39,9 +37,6 @@ public class Product {
     }
 
     public void setStock(int stocks) {
-        if (stock + stocks > Constants.MAX_STOCKS) {
-            stocks = Constants.MAX_STOCKS;
-        }
         this.stock = stocks;
     }
 

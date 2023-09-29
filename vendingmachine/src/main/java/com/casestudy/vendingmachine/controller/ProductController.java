@@ -17,7 +17,6 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
-
     // Method to handle post requests for getting a product
     @GetMapping("/getAll")
     public List<Product> get() {

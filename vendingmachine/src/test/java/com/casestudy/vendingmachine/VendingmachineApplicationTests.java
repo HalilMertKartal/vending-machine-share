@@ -322,7 +322,4 @@ class VendingmachineApplicationTests {
 
 		assertEquals("machine", vendingMachine.getCurrentMoneyToProcess() - p1.getPrice(), vendingMachineService.requestProductByID(p1.getId()));
 	}
-
-
-
 }

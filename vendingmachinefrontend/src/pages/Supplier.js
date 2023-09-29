@@ -3,7 +3,7 @@ import { Paper, Button, FormControl, InputLabel, Select, MenuItem,
     DialogTitle } from "@mui/material";
 import Snackbar from '@mui/material/Snackbar';
 import * as React from 'react';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -55,13 +55,13 @@ const Supplier = () => {
     HTTP Request functions
     */
 
-    const loadProduct=async ()=>{
+    const loadProduct= useCallback( async ()=>{
         const result = await axios.get(`http://localhost:8080/product/get${id}`);
         setProduct(result.data);
-    }
+    }, [id]);
 
     const resetMachine=async ()=>{
-        const result = await axios.patch(`http://localhost:8080/vending/resetMachine`);
+        await axios.patch(`http://localhost:8080/vending/resetMachine`);
         setTimeout(() => {
             reloadWindow();
         }, Constants.RELOAD_MS); 
@@ -102,7 +102,7 @@ const Supplier = () => {
     // If id is changed, this callback will be used.
     useEffect(() => {
         loadProduct(id);
-    }, [id, reRenderFlag]);
+    }, [id, reRenderFlag, loadProduct]);
 
 
     /*
@@ -116,15 +116,16 @@ const Supplier = () => {
     const handleAddStocksInputChange = (event) => {
         const stocksInt = Math.floor(Number(event.target.value))
         event.target.value = stocksInt;
-        console.log(stocksInt);
+        
         if (stocksInt > Constants.MAX_STOCKS_INPUT) {
-            event.target.value = Constants.MAX_STOCKS_INPUT;
+            event.target.value = String(stocksInt).slice(0, -1);
         } else if (stocksInt < 1) {
             event.target.value = 0;
         }
+        console.log("Stocks: " +event.target.value);
         setStocksToUpdate( () => (
             {
-                "stock": stocksInt
+                "stock": Number(event.target.value)
             }
         ) );
     };

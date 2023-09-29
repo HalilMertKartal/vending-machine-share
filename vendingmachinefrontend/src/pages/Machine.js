@@ -1,14 +1,22 @@
-import { useState, useEffect, forwardRef } from "react";
+import { useState, useEffect } from "react";
 import axios from 'axios';
 import "../style/Machine.css";
+import useSound from 'use-sound';
 import * as Constants from "../util/Constants";
+
 import machineImg from "../images/vending_machine.jpg";
 import colaImg from "../images/cola.jpg";
 import waterImg from "../images/water.jpg";
 import sodaImg from "../images/soda.jpg";
-import { Button } from "@mui/material";
+
+import putMoneySound from '../sounds/put_money.mp3';
+import refundSound from '../sounds/refund.mp3'
+import okSound from '../sounds/ok.mp3'
+import errSound from '../sounds/error.mp3'
+
 import Snackbar from '@mui/material/Snackbar';
 import Alert from "../util/AlertUtil";
+import CustomBtn from "../components/CustomBtn";
 
 const Machine = () => {
     /*
@@ -23,17 +31,35 @@ const Machine = () => {
     const [isSnackbarOpen, setSnackbarOpen] = useState(false);
 
     const [selectedProductID, setSelectedProductID] = useState(0);
-
     const [showPicture, setShowPicture] = useState(false);
+
+    const [waterPrice, setWaterPrice] = useState(25);
+    const [cokePrice, setCokePrice] = useState(35);
+    const [sodaPrice, setSodaPrice] = useState(45);
+
+    const [playPutMoneySound] = useSound(putMoneySound, { volume: 0.1 });
+    const [playRefundSound] = useSound(refundSound, { volume: 0.35 });
+    const [playOKSound] = useSound(okSound, { volume: 0.15 });
+    const [playErrorSound] = useSound(errSound, { volume: 0.25 });
 
     // Initialize the temperature as fetched from db just once
     const fetchTemperatureData = async ()=> {
         const response = await axios.get(`http://localhost:8080/vending/getTemperature`);
         setTemperatureInside(parseFloat(response.data).toFixed(1));
     }
+    const fetchPrices = async ()=> {
+        const responseW = await axios.get(`http://localhost:8080/product/get1`);
+        const responseC = await axios.get(`http://localhost:8080/product/get2`);
+        const responseS = await axios.get(`http://localhost:8080/product/get3`);
+        
+        setWaterPrice(responseW.data.price);
+        setCokePrice(responseC.data.price);
+        setSodaPrice(responseS.data.price);
+    }
 
     useEffect(() => {
         fetchTemperatureData();
+        fetchPrices();
     }, []);
 
     useEffect(() => {
@@ -63,19 +89,27 @@ const Machine = () => {
     const putMoney = async(givenMoney) => {
         const response = await axios.patch(`http://localhost:8080/vending/putMoney${givenMoney}`);
         handleOpenSnackbar(Constants.PUT_MONEY_MSG + givenMoney + ". Total credit is: "+response.data, "success");
+        playPutMoneySound();
     }
 
     // Options: 1, 2 or 3. This will be triggered when one of the buttons is pressed
     const requestProduct = async(givenID) => {
         const response = await axios.patch(`http://localhost:8080/vending/requestProduct${givenID}`);
         if (response.data === -1) {
+            // If a picture is already shown, keep it
+            if (!showPicture) {
+                handleShowPicture(false, givenID);
+            }
+
             handleOpenSnackbar(Constants.PRODUCT_RETURN_FAILED_MSG, "error");
-            handleShowPicture(false);
+        
         }
         else {
             // Handle success
-            handleShowPicture(true);
+            setSelectedProductID(givenID);
+            handleShowPicture(true, givenID);
             handleOpenSnackbar(Constants.PRODUCT_RETURN_SUCCESS + response.data, "success");
+            playOKSound();
             
         }
     }
@@ -85,10 +119,13 @@ const Machine = () => {
         const response = await axios.patch(`http://localhost:8080/vending/takeRefund`);
         console.log(response.data); // Refund amount is the response
         if (response.data === 0) {
+            // Fail
             handleOpenSnackbar(Constants.REFUND_FAILED, "error");
         }
         else {
+            // Success
             handleOpenSnackbar(Constants.REFUND_SUCCEED + response.data, "success");
+            playRefundSound();
         }
     }
 
@@ -103,7 +140,6 @@ const Machine = () => {
     }
 
     const handleProductBtnClicked = (id) => {
-        setSelectedProductID(id);
         requestProduct(id);
     }
 
@@ -116,7 +152,9 @@ const Machine = () => {
         setSnackbarMessage(message);
         setSnackbarSeverity(type);
         setSnackbarOpen(true);
-
+        if (type === "error") {
+            playErrorSound();
+        }
       };
     
     const handleCloseSnackbar = (event, reason) => {
@@ -127,8 +165,9 @@ const Machine = () => {
 
     const imgs = [waterImg, colaImg, sodaImg];
 
-    const handleShowPicture =(bool) => {
-        if (bool && selectedProductID !== 0) {
+    const handleShowPicture =(bool, givenID) => {
+;
+        if (bool && givenID !== 0) {
             setShowPicture(true);
         } else {
             setShowPicture(false);
@@ -162,7 +201,7 @@ const Machine = () => {
                 <div key={index} className="grid-item">
                     <img
                         src={`${getImageUrlForIndex(index)}`}
-                        alt={`Image ${index}`}
+                        alt={`${index}`}
                         className="grid-image"
                     />
                 </div>
@@ -172,115 +211,100 @@ const Machine = () => {
                 
                 <div className="money-btn-group">
                 <text><b>Put money below</b></text>
-                    <Button variant="contained" className="money-btn"
-                    style={{
-                    borderRadius: 15,
-                    backgroundColor: moneyBtnColor,
-                    marginTop: "10px",
-                    padding: "18px 36px",
-                    fontSize: "35px"
-                        }}
+                    <CustomBtn 
+                        className="money-btn"
+                        backgroundColor={moneyBtnColor}
+                        marginTop="10px"
+                        fontSize= "35px"
                         onClick={() => handleMoneyBtnClicked(1)}>
                         1
-                    </Button>
-                    <Button variant="contained" className="money-btn"
-                    style={{
-                        borderRadius: 15,
-                        backgroundColor: moneyBtnColor,
-                        padding: "18px 36px",
-                        marginTop: "10px",
-                        marginLeft:"10px",
-                        fontSize: "35px"
-                            }}
-                            onClick={() => handleMoneyBtnClicked(5)}>
+                    </CustomBtn>
+                    
+                    <CustomBtn 
+                        className="money-btn"
+                        backgroundColor={moneyBtnColor}
+                        marginTop="10px"
+                        marginLeft="10px"
+                        fontSize= "35px"
+                        onClick={() => handleMoneyBtnClicked(5)}>
                         5
-                    </Button>
-                    <Button variant="contained" className="money-btn"
-                    style={{
-                        borderRadius: 15,
-                        backgroundColor: moneyBtnColor,
-                        padding: "18px 36px",
-                        marginTop: "15px",
-                        fontSize: "35px"
-                            }}
-                            onClick={() => handleMoneyBtnClicked(10)}>
+                    </CustomBtn>
+                    
+                    <CustomBtn 
+                        className="money-btn"
+                        backgroundColor={moneyBtnColor}
+                        marginTop="10px"
+                        fontSize= "35px"
+                        onClick={() => handleMoneyBtnClicked(10)}>
                         10
-                    </Button>
-                    <Button variant="contained" className="money-btn"
-                    style={{
-                        borderRadius: 15,
-                        backgroundColor: moneyBtnColor,
-                        padding: "18px 36px",
-                        marginLeft:"10px",
-                        marginTop: "15px",
-                        fontSize: "35px"
-                            }}
-                            onClick={() => handleMoneyBtnClicked(20)}>
+                    </CustomBtn>
+
+                    <CustomBtn 
+                        className="money-btn"
+                        backgroundColor={moneyBtnColor}
+                        marginTop="10px"
+                        marginLeft="10px"
+                        fontSize= "35px"
+                        onClick={() => handleMoneyBtnClicked(20)}>
                         20
-                    </Button>
+                    </CustomBtn>
                 </div>
                 
                 <div className="product-button-group">
                     <text><b>Select a product below</b></text>
-                    <Button variant="contained" className="product-btn"
-                    style={{
-                    borderRadius: 15,
-                    backgroundColor: "#21b6ae",
-                    marginTop: "10px",
-                    padding: "18px 36px",
-                    fontSize: "30px"
-                        }}
+                    <CustomBtn 
+                        className="product-btn"
+                        backgroundColor="#21b6ae"
+                        marginTop="10px"
+                        fontSize= "30px"
                         onClick={() => handleProductBtnClicked(1)}>
-                        Water
-                    </Button>
-                    <Button variant="contained" className="product-btn"
-                    style={{
-                        borderRadius: 15,
-                        backgroundColor: "#C70525",
-                        padding: "18px 36px",
-                        marginTop: "10px",
-                        fontSize: "30px"
-                            }}
-                            onClick={() => handleProductBtnClicked(2)}>
-                        Coke
-                    </Button>
-                    <Button variant="contained" className="product-btn"
-                    style={{
-                        borderRadius: 15,
-                        backgroundColor: "green",
-                        padding: "18px 36px",
-                        marginTop: "10px",
-                        fontSize: "30px"
-                            }}
-                            onClick={() => handleProductBtnClicked(3)}>
-                        Soda
-                    </Button>
+                        Water({waterPrice}$)
+                    </CustomBtn>
+                    
+                    <CustomBtn 
+                        className="product-btn"
+                        backgroundColor="#C70525"
+                        marginTop="10px"
+                        fontSize= "30px"
+                        onClick={() => handleProductBtnClicked(2)}>
+                        Coke({cokePrice}$)
+                    </CustomBtn>
+
+                    <CustomBtn 
+                        className="product-btn"
+                        backgroundColor="green"
+                        marginTop="10px"
+                        fontSize= "30px"
+                        onClick={() => handleProductBtnClicked(3)}>
+                        Soda({sodaPrice}$)
+                    </CustomBtn>
+
                 </div>
 
                 <div className="refund-group">
                     <text>
                         <b>Take Refund</b>
                     </text>
-                    <Button variant="contained" className="refund-btn"
-                    style={{
-                        borderRadius: 15,
-                        backgroundColor: "black",
-                        padding: "18px 36px",
-                        marginTop: "10px",
-                        marginLeft: "23px",
-                        fontSize: "25px"
-                            }}
-                            onClick={handleRefundBtnClicked}>
+
+                    <CustomBtn 
+                        className="refund-btn"
+                        backgroundColor="black"
+                        marginTop="10px"
+                        marginLeft= "23px"
+                        fontSize= "25px"
+                        onClick={handleRefundBtnClicked}>
+
                         REFUND
-                    </Button>
+                    </CustomBtn>
+
                 </div>
             </div>
-            <div className="return-area">
-                <img className="product-img"
+            <div className="return-area"
+            onClick={() => setShowPicture(false)}>
+                <img className="return-img"
                     hidden={!showPicture}
                     src={imgs[selectedProductID-1]}
                     alt="Machine"
-                    
                 />                        
             </div>
             <Snackbar open={isSnackbarOpen} autoHideDuration={5000} onClose={handleCloseSnackbar}>
