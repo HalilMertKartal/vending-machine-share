@@ -84,17 +84,30 @@
     margin-left: 5px;
 }
 
+.show-current-money {
+    position: relative;
+    top: 35%;
+    left: 50%;
+    border: 5px solid green;
+    background-color: rgb(190, 218, 216);
+    font-size: 25px;
+    max-width: 80%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: rgb(24, 161, 24);
+}
+
 .product-button-group {
     position: absolute;
     width: fit-content;
-    margin-top: 210px;
+    margin-top: 190px;
     margin-left: 5px;
 }
 
 .refund-group {
-    position: absolute;
+    position: relative;
     width: fit-content;
-    margin-top: 480px;
+    margin-top: 430px;
     margin-left: 5px;
 }
 

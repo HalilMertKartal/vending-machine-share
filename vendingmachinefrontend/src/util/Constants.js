@@ -13,3 +13,9 @@ export const PRODUCT_RETURN_SUCCESS = "Please take your product, and your change
 export const REFUND_FAILED = "REFUND FAILED! There is no money to return";
 export const REFUND_SUCCEED = "Successfully refunded: ";
 export const PUT_MONEY_MSG = "Successfully put: "
+
+export const STATE_NAMES = {
+    WATER : "set-water-price",
+    COKE : "set-coke-price",
+    SODA : "set-soda-price"
+};

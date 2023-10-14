@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer } from "react";
 import axios from 'axios';
 import "../style/Machine.css";
 import useSound from 'use-sound';
@@ -24,6 +24,7 @@ const Machine = () => {
     */
 
     const [temperatureInside, setTemperatureInside] = useState(0);
+    const [currentMoney, setCurrentMoney] = useState(0);
 
     const [snackbarMessage, setSnackbarMessage] = useState("");
     // Default: success. If you want to change snackbar to another severity, do it
@@ -33,9 +34,47 @@ const Machine = () => {
     const [selectedProductID, setSelectedProductID] = useState(0);
     const [showPicture, setShowPicture] = useState(false);
 
-    const [waterPrice, setWaterPrice] = useState(25);
-    const [cokePrice, setCokePrice] = useState(35);
-    const [sodaPrice, setSodaPrice] = useState(45);
+    /*
+    @PARAMS
+    state: basically the object of current values of states
+    action: passed as the obj that you give into the dispatch()
+    */
+
+    // @RETURNS the new version of state
+    const reducer = (state, action) => {
+        switch(action.type) {
+            case Constants.STATE_NAMES.WATER:
+                return {
+                    ...state,
+                    waterPrice : action.payload
+                };
+
+            case Constants.STATE_NAMES.COKE:
+                return {
+                    ...state,
+                    cokePrice : action.payload
+                };
+
+            case Constants.STATE_NAMES.SODA: 
+                return {
+                    ...state,
+                    sodaPrice : action.payload
+                };
+
+            default: return state;
+        };
+    };
+
+    const initializeStates = () => {
+        return {
+            waterPrice: 0,
+            cokePrice: 0,
+            sodaPrice: 0
+        };  
+    };
+
+    const [priceState, dispatch] = useReducer(reducer, initializeStates);
+
 
     const [playPutMoneySound] = useSound(putMoneySound, { volume: 0.1 });
     const [playRefundSound] = useSound(refundSound, { volume: 0.35 });
@@ -46,30 +85,58 @@ const Machine = () => {
     const fetchTemperatureData = async ()=> {
         const response = await axios.get(`http://localhost:8080/vending/getTemperature`);
         setTemperatureInside(parseFloat(response.data).toFixed(1));
-    }
+    };
     const fetchPrices = async ()=> {
-        const responseW = await axios.get(`http://localhost:8080/product/get1`);
-        const responseC = await axios.get(`http://localhost:8080/product/get2`);
-        const responseS = await axios.get(`http://localhost:8080/product/get3`);
-        
-        setWaterPrice(responseW.data.price);
-        setCokePrice(responseC.data.price);
-        setSodaPrice(responseS.data.price);
+        const responseWaterPrice = (await axios
+            .get(`http://localhost:8080/product/get1`)).data.price;
+        const responseCokePrice = (await axios
+            .get(`http://localhost:8080/product/get2`)).data.price;
+        const responseSodaPrice = (await axios
+            .get(`http://localhost:8080/product/get3`)).data.price;
+
+        const responses = [
+            responseWaterPrice, 
+            responseCokePrice,
+            responseSodaPrice ];
+
+        const names = [ Constants.STATE_NAMES.WATER,
+                        Constants.STATE_NAMES.COKE,
+                        Constants.STATE_NAMES.SODA ];
+
+        responses.forEach((item, index) => {
+            dispatch(
+                {
+                    type: names[index],
+                    payload: item
+                }
+            );
+        }); 
+    };
+
+    const fetchCurrentMoney = async ()=> {
+        const response = await axios.patch(`http://localhost:8080/vending/putMoney0`);
+        /* Response will include current money. This patch call has no effect.
+        This is just a workaround.
+        A new controller function is needed to properly fetch the data by using a GET request.
+        */
+        setCurrentMoney(response.data);
     }
 
     useEffect(() => {
         fetchTemperatureData();
         fetchPrices();
-    }, []);
+        fetchCurrentMoney();
 
-    useEffect(() => {
         // Calls dummyCooling every second
         dummyCooling();
         const intervalId = setInterval(dummyCooling, 1000);
         return () => {
             clearInterval(intervalId);
         };
+  
     }, []);
+
+
 
     /*
     HTTP Request functions
@@ -89,6 +156,7 @@ const Machine = () => {
     const putMoney = async(givenMoney) => {
         const response = await axios.patch(`http://localhost:8080/vending/putMoney${givenMoney}`);
         handleOpenSnackbar(Constants.PUT_MONEY_MSG + givenMoney + ". Total credit is: "+response.data, "success");
+        setCurrentMoney(response.data);
         playPutMoneySound();
     }
 
@@ -110,7 +178,7 @@ const Machine = () => {
             handleShowPicture(true, givenID);
             handleOpenSnackbar(Constants.PRODUCT_RETURN_SUCCESS + response.data, "success");
             playOKSound();
-            
+            setCurrentMoney(0);
         }
     }
 
@@ -145,6 +213,7 @@ const Machine = () => {
 
     const handleRefundBtnClicked = () => {
         takeRefund();
+        setCurrentMoney(0);
     }
 
 
@@ -249,6 +318,10 @@ const Machine = () => {
                         20
                     </CustomBtn>
                 </div>
+
+                <div className="show-current-money">
+                <text>{currentMoney}$</text>
+                </div>
                 
                 <div className="product-button-group">
                     <text><b>Select a product below</b></text>
@@ -258,7 +331,7 @@ const Machine = () => {
                         marginTop="10px"
                         fontSize= "30px"
                         onClick={() => handleProductBtnClicked(1)}>
-                        Water({waterPrice}$)
+                        Water({priceState.waterPrice}$)
                     </CustomBtn>
                     
                     <CustomBtn 
@@ -267,7 +340,7 @@ const Machine = () => {
                         marginTop="10px"
                         fontSize= "30px"
                         onClick={() => handleProductBtnClicked(2)}>
-                        Coke({cokePrice}$)
+                        Coke({priceState.cokePrice}$)
                     </CustomBtn>
 
                     <CustomBtn 
@@ -276,7 +349,7 @@ const Machine = () => {
                         marginTop="10px"
                         fontSize= "30px"
                         onClick={() => handleProductBtnClicked(3)}>
-                        Soda({sodaPrice}$)
+                        Soda({priceState.sodaPrice}$)
                     </CustomBtn>
 
                 </div>

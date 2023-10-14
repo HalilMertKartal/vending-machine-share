@@ -131,7 +131,7 @@ const Supplier = () => {
     };
 
     const handleChangePriceInputChange = (event) => {
-        console.log(stocksToUpdate);
+  
         const priceInt = Number(event.target.value);
         if (priceInt > Constants.MAX_PRICE_INPUT) {
             event.target.value = Constants.MAX_PRICE_INPUT;
